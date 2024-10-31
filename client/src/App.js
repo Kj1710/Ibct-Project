@@ -8,6 +8,7 @@ function App() {
     web3: null,
     contract: null,
     accounts: [],
+    selectedAccount: "",
   });
   const [eventName, setEventName] = useState("");
   const [eventDate, setEventDate] = useState("");
@@ -19,7 +20,7 @@ function App() {
   useEffect(() => {
     const provider = new Web3.providers.HttpProvider("HTTP://127.0.0.1:7545");
 
-    async function template() {
+    async function initializeWeb3() {
       const web3 = new Web3(provider);
       const networkId = await web3.eth.net.getId();
       const deployedNetwork = EventContract.networks[networkId];
@@ -28,14 +29,20 @@ function App() {
         deployedNetwork.address
       );
       const accounts = await web3.eth.getAccounts();
-      setState({ web3: web3, contract: contract, accounts: accounts });
+      setState({
+        web3: web3,
+        contract: contract,
+        accounts: accounts,
+        selectedAccount: accounts[0], // Set the first account as default
+      });
     }
-    provider && template();
+
+    provider && initializeWeb3();
   }, []);
 
   // Function to create a new event
   const createEvent = async () => {
-    const { contract, accounts } = state;
+    const { contract, selectedAccount } = state;
     try {
       await contract.methods
         .createEvent(
@@ -44,7 +51,7 @@ function App() {
           Web3.utils.toWei(eventPrice, "ether"),
           parseInt(ticketCount)
         )
-        .send({ from: accounts[0], gas: 3000000 });
+        .send({ from: selectedAccount, gas: 3000000 });
       alert("Event created successfully!");
       fetchEvents();
     } catch (error) {
@@ -72,13 +79,17 @@ function App() {
 
   // Function to buy tickets
   const buyTicket = async (eventId) => {
-    const { contract, accounts, web3 } = state;
+    const { contract, selectedAccount, web3 } = state;
     const event = events.find((e) => e.id === eventId);
-    const ticketPrice = parseFloat(web3.utils.fromWei(event.price, "ether")) * ticketQuantity;
+    const ticketPrice =
+      parseFloat(web3.utils.fromWei(event.price, "ether")) * ticketQuantity;
     try {
       await contract.methods
         .buyTicket(eventId, ticketQuantity)
-        .send({ from: accounts[0], value: Web3.utils.toWei(ticketPrice.toString(), "ether") });
+        .send({
+          from: selectedAccount,
+          value: Web3.utils.toWei(ticketPrice.toString(), "ether"),
+        });
       alert("Tickets purchased successfully!");
       fetchEvents();
     } catch (error) {
@@ -93,9 +104,32 @@ function App() {
     }
   }, [state.contract]);
 
+  // Handle account change
+  const handleAccountChange = (e) => {
+    setState((prevState) => ({
+      ...prevState,
+      selectedAccount: e.target.value,
+    }));
+  };
+
   return (
     <div className="App">
       <h1>Event Organizer</h1>
+
+      {/* Account Selector */}
+      <div>
+        <h3>Connected Account:</h3>
+        <select
+          value={state.selectedAccount}
+          onChange={handleAccountChange}
+        >
+          {state.accounts.map((account) => (
+            <option key={account} value={account}>
+              {account}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div>
         <h2>Create Event</h2>
