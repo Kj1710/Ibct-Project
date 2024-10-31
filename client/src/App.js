@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import EventContract from "./contracts/EventContract.json";
 import Web3 from "web3";
 import "./App.css";
+import { Navbar, Nav, Container, Form, Button, Card, Row, Col } from "react-bootstrap";
 
 function App() {
   const [state, setState] = useState({
@@ -33,14 +34,13 @@ function App() {
         web3: web3,
         contract: contract,
         accounts: accounts,
-        selectedAccount: accounts[0], // Set the first account as default
+        selectedAccount: accounts[0],
       });
     }
 
     provider && initializeWeb3();
   }, []);
 
-  // Function to create a new event
   const createEvent = async () => {
     const { contract, selectedAccount } = state;
     try {
@@ -59,7 +59,6 @@ function App() {
     }
   };
 
-  // Function to fetch all events
   const fetchEvents = async () => {
     const { contract } = state;
     const nextId = await contract.methods.nextId().call();
@@ -77,7 +76,6 @@ function App() {
     setEvents(eventsArray);
   };
 
-  // Function to buy tickets
   const buyTicket = async (eventId) => {
     const { contract, selectedAccount, web3 } = state;
     const event = events.find((e) => e.id === eventId);
@@ -97,14 +95,12 @@ function App() {
     }
   };
 
-  // Fetch events when component mounts
   useEffect(() => {
     if (state.contract) {
       fetchEvents();
     }
   }, [state.contract]);
 
-  // Handle account change
   const handleAccountChange = (e) => {
     setState((prevState) => ({
       ...prevState,
@@ -114,75 +110,126 @@ function App() {
 
   return (
     <div className="App">
-      <h1>Event Organizer</h1>
+      <Navbar bg="dark" variant="dark" expand="lg">
+        <Container>
+          <Navbar.Brand href="#home">Event Organizer</Navbar.Brand>
+          <Nav className="ml-auto">
+            <Nav.Link href="#create">Create Event</Nav.Link>
+            <Nav.Link href="#events">View Events</Nav.Link>
+            <Nav.Link href="#account">Account</Nav.Link>
+          </Nav>
+        </Container>
+      </Navbar>
 
-      {/* Account Selector */}
-      <div>
-        <h3>Connected Account:</h3>
-        <select
-          value={state.selectedAccount}
-          onChange={handleAccountChange}
-        >
-          {state.accounts.map((account) => (
-            <option key={account} value={account}>
-              {account}
-            </option>
-          ))}
-        </select>
-      </div>
+      <Container className="mt-4">
+        {/* Account Selector */}
+        <div id="account" className="mb-4">
+          <h3>Connected Account:</h3>
+          <Form.Select
+            aria-label="Account Selector"
+            value={state.selectedAccount}
+            onChange={handleAccountChange}
+          >
+            {state.accounts.map((account) => (
+              <option key={account} value={account}>
+                {account}
+              </option>
+            ))}
+          </Form.Select>
+        </div>
 
-      <div>
-        <h2>Create Event</h2>
-        <input
-          type="text"
-          placeholder="Event Name"
-          value={eventName}
-          onChange={(e) => setEventName(e.target.value)}
-        />
-        <input
-          type="date"
-          placeholder="Event Date"
-          value={eventDate}
-          onChange={(e) => setEventDate(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Ticket Price in ETH"
-          value={eventPrice}
-          onChange={(e) => setEventPrice(e.target.value)}
-        />
-        <input
-          type="number"
-          placeholder="Total Tickets"
-          value={ticketCount}
-          onChange={(e) => setTicketCount(e.target.value)}
-        />
-        <button onClick={createEvent}>Create Event</button>
-      </div>
-
-      <div>
-        <h2>Available Events</h2>
-        {events.length === 0 ? (
-          <p>No events created yet.</p>
-        ) : (
-          events.map((event) => (
-            <div key={event.id}>
-              <h3>{event.name}</h3>
-              <p>Date: {new Date(event.date * 1000).toLocaleString()}</p>
-              <p>Price: {Web3.utils.fromWei(event.price, "ether")} ETH</p>
-              <p>Tickets Remaining: {event.ticketRemain}</p>
-              <input
-                type="number"
-                min="1"
-                placeholder="Quantity"
-                value={ticketQuantity}
-                onChange={(e) => setTicketQuantity(parseInt(e.target.value))}
+        {/* Create Event Section */}
+        <div id="create" className="my-5">
+          <h2>Create Event</h2>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Event Name</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Event Name"
+                value={eventName}
+                onChange={(e) => setEventName(e.target.value)}
               />
-              <button onClick={() => buyTicket(event.id)}>Buy Tickets</button>
-            </div>
-          ))
-        )}
-      </div>
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Event Date</Form.Label>
+              <Form.Control
+                type="date"
+                placeholder="Event Date"
+                value={eventDate}
+                onChange={(e) => setEventDate(e.target.value)}
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Ticket Price in ETH</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Ticket Price in ETH"
+                value={eventPrice}
+                onChange={(e) => setEventPrice(e.target.value)}
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Total Tickets</Form.Label>
+              <Form.Control
+                type="number"
+                placeholder="Total Tickets"
+                value={ticketCount}
+                onChange={(e) => setTicketCount(e.target.value)}
+              />
+            </Form.Group>
+            <Button variant="primary" onClick={createEvent}>
+              Create Event
+            </Button>
+          </Form>
+        </div>
+
+        {/* Events List Section */}
+        <div id="events" className="my-5">
+          <h2>Available Events</h2>
+          {events.length === 0 ? (
+            <p>No events created yet.</p>
+          ) : (
+            <Row>
+              {events.map((event) => (
+                <Col key={event.id} md={4} className="mb-4">
+                  <Card>
+                    <Card.Body>
+                      <Card.Title>{event.name}</Card.Title>
+                      <Card.Text>
+                        Date: {new Date(event.date * 1000).toLocaleString()}
+                      </Card.Text>
+                      <Card.Text>
+                        Price: {Web3.utils.fromWei(event.price, "ether")} ETH
+                      </Card.Text>
+                      <Card.Text>
+                        Tickets Remaining: {event.ticketRemain}
+                      </Card.Text>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Ticket Quantity</Form.Label>
+                        <Form.Control
+                          type="number"
+                          min="1"
+                          value={ticketQuantity}
+                          onChange={(e) =>
+                            setTicketQuantity(parseInt(e.target.value))
+                          }
+                        />
+                      </Form.Group>
+                      <Button
+                        variant="success"
+                        onClick={() => buyTicket(event.id)}
+                      >
+                        Buy Tickets
+                      </Button>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          )}
+        </div>
+      </Container>
     </div>
   );
 }
